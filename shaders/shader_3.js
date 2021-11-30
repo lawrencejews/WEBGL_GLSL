@@ -7,6 +7,9 @@ require("three/examples/js/controls/OrbitControls");
 const canvasSketch = require("canvas-sketch");
 const glsl = require('glslify');
 
+// At the top of the file
+const _ = require("lodash");
+
 const settings = {
   // Make the loop animated
   animate: true,
@@ -37,28 +40,40 @@ const sketch = ({ context }) => {
   // Setup a geometry
   const geometry = new THREE.SphereGeometry(1, 32, 16);
 
+  // Created Points to be used by baseGeom.
+  function getVertices(geom) {
+    let positions = geom.attributes.position.array;
+    let count = positions.length / 3;
+    let datas = [];
+    for (let i = 0; i < count; i++) {
+        datas.push( new THREE.Vector3(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]) );
+    }
+    return datas;
+  }
+
   // radius and detail
   const baseGeom = new THREE.IcosahedronGeometry(1, 1);
-  const points = baseGeom.vertices;
-  console.log(points);
+  const points = getVertices(baseGeom);
+  // Remove duplicates
+  const cleanPoints = _.uniqWith(points, _.isEqual);
 
-  const circleGeom = new THREE.CircleGeometry(1, 32);
+  // Circles drawn on the sphere.
+  const circleGeometry = new THREE.CircleGeometry(1, 32);
 
-  // render points on edges
-  points.forEach((point) => {
-    const mesh = new THREE.Mesh(
-      circleGeom,
-      new THREE.MeshBasicMaterial({
-        color: 'black',
-        side: THREE.BackSide
-      })
-    );
-    mesh.position.copy(point);
-    mesh.scale.setScalar(0.15);
-    mesh.lookAt(new THREE.Vectors3())
-    scene.add(mesh);
-  });
+  const spaceOrigin = new THREE.Vector3();
+  const pointMaterial  = new THREE.MeshBasicMaterial({
+    color: "black",
+    side: THREE.BackSide
+});
 
+cleanPoints.forEach(point => {
+  const mesh = new THREE.Mesh(circleGeometry, pointMaterial);
+  mesh.position.copy(point);
+  mesh.scale.setScalar(0.075 * Math.random() + 0.075);
+  mesh.lookAt(spaceOrigin);
+  scene.add(mesh);
+});
+  
   const vertexShader = /* glsl */  `
   varying vec2 vUv;
   void main(){
@@ -66,7 +81,7 @@ const sketch = ({ context }) => {
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xyz, 1.0);
   }
   `
-
+  
   const fragmentShader = glsl( /* glsl */ `
   #pragma glslify: noise = require('glsl-noise/simplex/3d');
   varying vec2 vUv;

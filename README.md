@@ -5,3 +5,8 @@
 #### RUN Code: 
 - canvas-sketch sketch.js
 - canvas-sketch shaders.js
+#### Save MP4: 
+- Install ffmpeg globally
+- run file -> canvas-sketch shader.js --stream
+- GIF -> just add  --stream=gif.
+- Then command + shift s.
